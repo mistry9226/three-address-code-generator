@@ -1,0 +1,2 @@
+# Optional dependencies for rich terminal UI (Python standard library is used for compiler core and web server)
+rich>=13.0.0

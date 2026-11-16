@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Three Address Code (TAC) Generator | Compiler Design</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Mermaid.js for Control Flow Graph rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-text">
+          <h1>Three Address Code (TAC) Generator</h1>
+          <p class="subtitle">Compiler Design Intermediate Representation (IR) Workbench</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="control-group">
+          <label for="exampleSelect">Examples:</label>
+          <select id="exampleSelect">
+            <option value="">-- Select Example --</option>
+          </select>
+        </div>
+
+        <label class="toggle-switch">
+          <input type="checkbox" id="optimizeCheckbox" checked>
+          <span class="slider"></span>
+          <span class="toggle-label">Optimize TAC</span>
+        </label>
+
+        <button id="compileBtn" class="btn btn-primary">
+          <span class="btn-icon">▶</span> Compile to TAC
+        </button>
+
+        <button id="simulateBtn" class="btn btn-accent">
+          <span class="btn-icon">⚙</span> Run Simulation
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="main-workspace">
+      <!-- Left Panel: Code Input -->
+      <section class="panel editor-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="icon">📝</span> Source Code (C-Subset)
+          </div>
+          <div class="panel-actions">
+            <span class="badge shortcut-badge">Ctrl + Enter to Compile</span>
+            <button id="clearBtn" class="btn-sm btn-ghost" title="Clear Code">Clear</button>
+          </div>
+        </div>
+
+        <div class="editor-container">
+          <div id="lineNumbers" class="line-numbers">1</div>
+          <textarea id="sourceCode" spellcheck="false" placeholder="// Enter C-like code here...
+int a = 10;
+int b = 20;
+int c = a + b * 2;"></textarea>
+        </div>
+
+        <div id="statusAlert" class="status-alert hidden"></div>
+      </section>
+
+      <!-- Right Panel: Output & Visualizations -->
+      <section class="panel output-panel">
+        <div class="tab-bar">
+          <button class="tab-btn active" data-tab="linearTab">Linear TAC</button>
+          <button class="tab-btn" data-tab="quadsTab">Quadruples</button>
+          <button class="tab-btn" data-tab="triplesTab">Triples</button>
+          <button class="tab-btn" data-tab="indirectTab">Indirect Triples</button>
+          <button class="tab-btn" data-tab="astTab">AST Visualizer</button>
+          <button class="tab-btn" data-tab="cfgTab">CFG Flowchart</button>
+          <button class="tab-btn" data-tab="optTab">Optimization Diff</button>
+          <button class="tab-btn" data-tab="vmTab">VM Debugger</button>
+        </div>
+
+        <div class="tab-content">
+          <!-- 1. Linear TAC Tab -->
+          <div id="linearTab" class="tab-pane active">
+            <div class="tab-toolbar">
+              <span class="tab-info">Standard 3-Address Instructions</span>
+              <button id="copyTacBtn" class="btn-sm btn-secondary">📋 Copy TAC</button>
+            </div>
+            <pre id="linearTacOutput" class="code-output"><code>// Compile to view generated Three Address Code</code></pre>
+          </div>
+
+          <!-- 2. Quadruples Tab -->
+          <div id="quadsTab" class="tab-pane">
+            <div class="tab-toolbar">
+              <span class="tab-info">Quadruples Table: <code>(operator, arg1, arg2, result)</code></span>
+            </div>
+            <div class="table-container">
+              <table id="quadsTable" class="data-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Op</th>
+                    <th>Arg 1</th>
+                    <th>Arg 2</th>
+                    <th>Result</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="5" class="empty-state">No quadruples generated yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 3. Triples Tab -->
+          <div id="triplesTab" class="tab-pane">
+            <div class="tab-toolbar">
+              <span class="tab-info">Triples Table: <code>(operator, arg1, arg2)</code> referencing positions <code>(index)</code></span>
+            </div>
+            <div class="table-container">
+              <table id="triplesTable" class="data-table">
+                <thead>
+                  <tr>
+                    <th>Index</th>
+                    <th>Op</th>
+                    <th>Arg 1</th>
+                    <th>Arg 2</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="4" class="empty-state">No triples generated yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 4. Indirect Triples Tab -->
+          <div id="indirectTab" class="tab-pane">
+            <div class="tab-toolbar">
+              <span class="tab-info">Indirect Triples: Pointer Array to Triples Array</span>
+            </div>
+            <div class="table-container">
+              <table id="indirectTable" class="data-table">
+                <thead>
+                  <tr>
+                    <th>Pointer</th>
+                    <th>Triple Statement</th>
+                    <th>Op</th>
+                    <th>Arg 1</th>
+                    <th>Arg 2</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="5" class="empty-state">No indirect triples generated yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 5. AST Tab -->
+          <div id="astTab" class="tab-pane">
+            <div class="tab-toolbar">
+              <span class="tab-info">Abstract Syntax Tree (Hierarchical JSON / Visual Tree)</span>
+            </div>
+            <div id="astContainer" class="ast-tree-container">
+              <div class="empty-state">Compile to view AST tree.</div>
+            </div>
+          </div>
+
+          <!-- 6. Control Flow Graph Tab -->
+          <div id="cfgTab" class="tab-pane">
+            <div class="tab-toolbar">
+              <span class="tab-info">Basic Blocks and Control Flow Graph (Mermaid Flowchart)</span>
+            </div>
+            <div id="cfgContainer" class="cfg-container">
+              <div class="empty-state">Compile to view Control Flow Graph.</div>
+            </div>
+          </div>
+
+          <!-- 7. Optimization Diff Tab -->
+          <div id="optTab" class="tab-pane">
+            <div class="tab-toolbar">
+              <div id="optStatsBadges" class="stats-badges"></div>
+            </div>
+            <div class="diff-container">
+              <div class="diff-column">
+                <h4>Original TAC</h4>
+                <pre id="diffOriginal" class="code-output"><code>// Original TAC</code></pre>
+              </div>
+              <div class="diff-column">
+                <h4>Optimized TAC</h4>
+                <pre id="diffOptimized" class="code-output"><code>// Optimized TAC</code></pre>
+              </div>
+            </div>
+          </div>
+
+          <!-- 8. VM Simulator Tab -->
+          <div id="vmTab" class="tab-pane">
+            <div class="tab-toolbar">
+              <div class="vm-controls">
+                <button id="stepVmBtn" class="btn-sm btn-primary">⏭ Step Next</button>
+                <button id="runAllVmBtn" class="btn-sm btn-accent">▶ Run All</button>
+                <button id="resetVmBtn" class="btn-sm btn-ghost">↺ Reset</button>
+              </div>
+              <span id="stepCounter" class="badge">Step 0 / 0</span>
+            </div>
+
+            <div class="vm-workspace">
+              <div class="vm-code-pane">
+                <h4>TAC Instructions (Active Pointer Highlight)</h4>
+                <div id="vmInstructionList" class="vm-instruction-list">
+                  <div class="empty-state">Run simulation to step through TAC.</div>
+                </div>
+              </div>
+
+              <div class="vm-state-pane">
+                <h4>Variable Memory</h4>
+                <table id="vmVarTable" class="data-table">
+                  <thead>
+                    <tr><th>Variable</th><th>Value</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td colspan="2" class="empty-state">No variables in memory.</td></tr>
+                  </tbody>
+                </table>
+
+                <h4 style="margin-top: 15px;">Output Logs</h4>
+                <pre id="vmLogs" class="code-output" style="max-height: 120px;"><code>[No output yet]</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
