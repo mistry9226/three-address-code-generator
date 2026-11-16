@@ -224,6 +224,86 @@ def run_repl():
                 print(f"Error: {e}")
 
 
+def export_report(result: CompilationResult, output_path: str, stats=None, sim_vars=None):
+    """Exports full compilation details into a formatted Markdown report file."""
+    lines = [
+        "# Compiler Design - Three Address Code Generation Report",
+        "",
+        "## 1. Source Code",
+        "```c",
+        result.source.strip(),
+        "```",
+        "",
+        "## 2. Linear Three Address Code (TAC)",
+        "```python",
+        result.linear_tac.strip(),
+        "```",
+        "",
+        "## 3. Quadruples Table",
+        "| # | Op | Arg 1 | Arg 2 | Result |",
+        "|---|----|-------|-------|--------|"
+    ]
+    for q in result.quadruples:
+        lines.append(f"| {q['index']} | `{q['op']}` | {q['arg1']} | {q['arg2']} | **{q['result']}** |")
+
+    lines.extend([
+        "",
+        "## 4. Triples Table",
+        "| Index | Op | Arg 1 | Arg 2 |",
+        "|-------|----|-------|-------|"
+    ])
+    for t in result.triples:
+        lines.append(f"| {t['index']} | `{t['op']}` | {t['arg1']} | {t['arg2']} |")
+
+    lines.extend([
+        "",
+        "## 5. Indirect Triples Table",
+        "| Pointer | Triple Index | Op | Arg 1 | Arg 2 |",
+        "|---------|--------------|----|-------|-------|"
+    ])
+    for ind in result.indirect_triples:
+        lines.append(f"| {ind['pointer']} | {ind['statement']} | `{ind['op']}` | {ind['arg1']} | {ind['arg2']} |")
+
+    if result.optimized_linear_tac:
+        lines.extend([
+            "",
+            "## 6. Optimized Three Address Code",
+            "```python",
+            result.optimized_linear_tac.strip(),
+            "```"
+        ])
+        if stats:
+            lines.extend([
+                "",
+                "### Optimization Metrics",
+                f"- **Initial Instructions**: {stats['initial_count']}",
+                f"- **Final Instructions**: {stats['final_count']}",
+                f"- **Instructions Reduced**: {stats['instructions_reduced']}",
+                f"- **Constant Folds**: {stats['constant_folds']}",
+                f"- **Algebraic Simplifications**: {stats['algebraic_simplifications']}",
+                f"- **Copy Propagations**: {stats['copy_propagations']}",
+                f"- **Dead Code Eliminated**: {stats['dead_instructions_removed']}"
+            ])
+
+    if sim_vars:
+        lines.extend([
+            "",
+            "## 7. Virtual Machine Execution State",
+            "| Variable | Value |",
+            "|----------|-------|"
+        ])
+        for k, v in sorted(sim_vars.items()):
+            lines.append(f"| `{k}` | `{v}` |")
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+
+    if RICH_AVAILABLE:
+        console.print(f"[bold green]✓ Report exported successfully to:[/bold green] {output_path}")
+    else:
+        print(f"Report exported successfully to: {output_path}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Three Address Code (TAC) Generator - Compiler Design Project")
     parser.add_argument("file", nargs="?", help="Path to source code file (.c or text)")
@@ -234,6 +314,7 @@ def main():
     parser.add_argument("-O", "--optimize", action="store_true", help="Run TAC optimization passes")
     parser.add_argument("--run", action="store_true", help="Execute TAC via the built-in Virtual Machine Simulator")
     parser.add_argument("--all", action="store_true", help="Show all representations (AST, TAC, Tables, CFG, Optimization, Run)")
+    parser.add_argument("--export", help="Export full compilation report to a markdown file (e.g. report.md)")
     parser.add_argument("--repl", action="store_true", help="Start interactive REPL mode")
     parser.add_argument("--gui", action="store_true", help="Launch the local interactive Web GUI")
 
@@ -299,9 +380,16 @@ def main():
                     border_style="yellow"
                 ))
 
-        if args.run or args.all:
+        sim_vars = None
+        if args.run or args.all or args.export:
             target_instrs = res.optimized_instructions if (args.optimize and res.optimized_instructions) else res.tac_instructions
-            display_simulation(target_instrs)
+            if args.run or args.all:
+                display_simulation(target_instrs)
+            if args.export:
+                sim_vars, _, _ = simulate_tac(target_instrs)
+
+        if args.export:
+            export_report(res, args.export, stats=res.optimizer_stats, sim_vars=sim_vars)
 
     except Exception as e:
         if RICH_AVAILABLE:

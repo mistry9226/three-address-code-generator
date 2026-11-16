@@ -170,6 +170,9 @@ python cli.py examples/08_optimization.c -O
 
 # Execute generated TAC via the Simulator
 python cli.py examples/03_while_loop.c --run
+
+# Export full Markdown report (source, TAC, Quads, Triples, metrics)
+python cli.py examples/01_arithmetic.c -O --export report.md
 ```
 
 ### 3. Interactive REPL Mode
